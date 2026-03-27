@@ -76,6 +76,7 @@ class BrowserUseRunner:
             return {"success": False, "error": "task is required"}
 
         try:
+            # 懒加载 browser-use：首次使用时才导入
             from browser_use import Agent as BUAgent
             from browser_use import Browser as BUBrowser
 
@@ -110,7 +111,8 @@ class BrowserUseRunner:
 
             if bu_browser is None:
                 bu_browser = BUBrowser(
-                    headless=not self._manager.visible, is_local=True,
+                    headless=not self._manager.visible,
+                    is_local=True,
                 )
                 logger.info("[BrowserTask] Created new browser instance")
 
@@ -123,7 +125,10 @@ class BrowserUseRunner:
                 }
 
             agent = BUAgent(
-                task=task, llm=llm, browser=bu_browser, max_steps=max_steps,
+                task=task,
+                llm=llm,
+                browser=bu_browser,
+                max_steps=max_steps,
             )
 
             _task_timeout = max_steps * 60
@@ -173,8 +178,7 @@ class BrowserUseRunner:
             if task_failed:
                 diagnosis = self._diagnose_failure(steps_taken, t_elapsed)
                 logger.error(
-                    f"[BrowserTask] Task failed ({steps_taken} steps, "
-                    f"{t_elapsed:.1f}s): {task}"
+                    f"[BrowserTask] Task failed ({steps_taken} steps, {t_elapsed:.1f}s): {task}"
                 )
                 return {
                     "success": False,
@@ -201,9 +205,7 @@ class BrowserUseRunner:
             }
 
             page_unchanged = (
-                pre_url and post_url
-                and pre_url == post_url
-                and pre_title == post_title
+                pre_url and post_url and pre_url == post_url and pre_title == post_title
             )
             if page_unchanged:
                 result_data["warning"] = (
@@ -215,14 +217,14 @@ class BrowserUseRunner:
                     "3. 不要反复重试 browser_task，连续失败 2 次应切换策略"
                 )
                 logger.warning(
-                    f"[BrowserTask] Page unchanged after task: "
-                    f"url={post_url}, title={post_title}"
+                    f"[BrowserTask] Page unchanged after task: url={post_url}, title={post_title}"
                 )
 
             return {"success": True, "result": result_data}
 
         except ImportError as e:
             from openakita.tools._import_helper import import_or_hint
+
             hint = import_or_hint("browser_use") or import_or_hint("langchain_openai") or str(e)
             logger.error(f"[BrowserTask] Import error: {hint}")
             return {"success": False, "error": hint}
@@ -267,7 +269,9 @@ class BrowserUseRunner:
             try:
                 llm = ChatOpenAI(model=model, api_key=api_key, base_url=base_url)
                 return _ensure_browser_use_llm_contract(
-                    llm, provider="openai", model=model,
+                    llm,
+                    provider="openai",
+                    model=model,
                 )
             except Exception as e:
                 logger.error(f"[BrowserTask] ChatOpenAI 初始化失败: {e}")
@@ -298,6 +302,7 @@ class BrowserUseRunner:
         # 3. ChatBrowserUse
         try:
             from browser_use import ChatBrowserUse
+
             llm = ChatBrowserUse()
             logger.info("[BrowserTask] Using ChatBrowserUse")
             return llm

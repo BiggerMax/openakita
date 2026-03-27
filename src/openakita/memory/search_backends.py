@@ -16,6 +16,8 @@ from __future__ import annotations
 import hashlib
 import logging
 import struct
+import time
+from collections import OrderedDict
 from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
@@ -39,22 +41,17 @@ class SearchBackend(Protocol):
         """搜索, 返回 [(memory_id, score), ...], score 越高越相关"""
         ...
 
-    def add(self, memory_id: str, content: str, metadata: dict | None = None) -> bool:
-        ...
+    def add(self, memory_id: str, content: str, metadata: dict | None = None) -> bool: ...
 
-    def delete(self, memory_id: str) -> bool:
-        ...
+    def delete(self, memory_id: str) -> bool: ...
 
-    def batch_add(self, items: list[dict]) -> int:
-        ...
+    def batch_add(self, items: list[dict]) -> int: ...
 
     @property
-    def available(self) -> bool:
-        ...
+    def available(self) -> bool: ...
 
     @property
-    def backend_type(self) -> str:
-        ...
+    def backend_type(self) -> str: ...
 
 
 # =========================================================================
@@ -116,6 +113,7 @@ class FTS5Backend:
         if self._jieba_available is None:
             try:
                 import jieba
+
                 self._jieba = jieba
                 self._jieba_available = True
                 self._jieba.setLogLevel(logging.WARNING)
@@ -206,6 +204,8 @@ class APIEmbeddingBackend:
         api_key: str = "",
         model: str = "",
         dimensions: int = 1024,
+        cache_max_size: int = 5000,
+        cache_ttl_seconds: int | None = None,
     ) -> None:
         self._storage = storage
         self._provider = provider
@@ -213,6 +213,9 @@ class APIEmbeddingBackend:
         self._model = model or self._default_model(provider)
         self._dimensions = dimensions
         self._httpx = None
+        self._cache_max_size = cache_max_size
+        self._cache_ttl = cache_ttl_seconds
+        self._embedding_cache: OrderedDict[str, tuple[list[float], float]] = OrderedDict()
 
     @property
     def available(self) -> bool:
@@ -236,9 +239,7 @@ class APIEmbeddingBackend:
         if query_emb is None:
             return []
 
-        memories = self._storage.query(
-            memory_type=filter_type, limit=200
-        )
+        memories = self._storage.query(memory_type=filter_type, limit=200)
         if not memories:
             return []
 
@@ -269,26 +270,42 @@ class APIEmbeddingBackend:
         if not text.strip():
             return None
 
-        content_hash = hashlib.sha256(
-            f"{self._model}:{text}".encode()
-        ).hexdigest()
+        content_hash = hashlib.sha256(f"{self._model}:{text}".encode()).hexdigest()
+
+        now = time.time()
+        if content_hash in self._embedding_cache:
+            embedding, cached_at = self._embedding_cache[content_hash]
+            if self._cache_ttl is None or (now - cached_at) < self._cache_ttl:
+                self._embedding_cache.move_to_end(content_hash)
+                return embedding
+            else:
+                del self._embedding_cache[content_hash]
 
         cached = self._storage.get_cached_embedding(content_hash)
         if cached is not None:
-            return self._bytes_to_floats(cached)
+            embedding = self._bytes_to_floats(cached)
+            self._add_to_cache(content_hash, embedding)
+            return embedding
 
         embedding = self._call_api(text)
         if embedding is not None:
             blob = self._floats_to_bytes(embedding)
-            self._storage.save_cached_embedding(
-                content_hash, blob, self._model, len(embedding)
-            )
+            self._storage.save_cached_embedding(content_hash, blob, self._model, len(embedding))
+            self._add_to_cache(content_hash, embedding)
         return embedding
+
+    def _add_to_cache(self, content_hash: str, embedding: list[float]) -> None:
+        if self._cache_max_size <= 0:
+            return
+        self._embedding_cache[content_hash] = (embedding, time.time())
+        while len(self._embedding_cache) > self._cache_max_size:
+            self._embedding_cache.popitem(last=False)
 
     def _call_api(self, text: str) -> list[float] | None:
         try:
             if self._httpx is None:
                 import httpx
+
                 self._httpx = httpx
 
             if self._provider == "dashscope":
@@ -374,6 +391,8 @@ def create_search_backend(
     api_key: str = "",
     api_model: str = "",
     api_dimensions: int = 1024,
+    cache_max_size: int = 5000,
+    cache_ttl_seconds: int | None = None,
 ) -> SearchBackend:
     """Create a search backend by type, with automatic fallback to FTS5."""
 
@@ -391,6 +410,8 @@ def create_search_backend(
             api_key=api_key,
             model=api_model,
             dimensions=api_dimensions,
+            cache_max_size=cache_max_size,
+            cache_ttl_seconds=cache_ttl_seconds,
         )
         if backend.available:
             logger.info(f"[SearchBackend] Using API Embedding backend ({api_provider})")

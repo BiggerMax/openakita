@@ -39,6 +39,8 @@ class UnifiedStore:
         api_provider: str = "",
         api_key: str = "",
         api_model: str = "",
+        cache_max_size: int = 5000,
+        cache_ttl_seconds: int | None = None,
     ) -> None:
         self.db = get_shared_storage(db_path)
 
@@ -47,11 +49,13 @@ class UnifiedStore:
         else:
             self.search = create_search_backend(
                 backend_type,
-                storage=self.db,  # now self.db is already initialized
+                storage=self.db,
                 vector_store=vector_store,
                 api_provider=api_provider,
                 api_key=api_key,
                 api_model=api_model,
+                cache_max_size=cache_max_size,
+                cache_ttl_seconds=cache_ttl_seconds,
             )
 
         self._fts5_fallback: FTS5Backend | None = None
@@ -69,12 +73,16 @@ class UnifiedStore:
         memory.scope_owner = scope_owner
         d = memory.to_dict()
         self.db.save_memory(d)
-        self.search.add(memory.id, memory.content, {
-            "type": memory.type.value,
-            "priority": memory.priority.value,
-            "importance": memory.importance_score,
-            "tags": memory.tags,
-        })
+        self.search.add(
+            memory.id,
+            memory.content,
+            {
+                "type": memory.type.value,
+                "priority": memory.priority.value,
+                "importance": memory.importance_score,
+                "tags": memory.tags,
+            },
+        )
         return memory.id
 
     def update_semantic(self, memory_id: str, updates: dict) -> bool:
@@ -83,12 +91,16 @@ class UnifiedStore:
             self.search.delete(memory_id)
             mem = self.db.get_memory(memory_id)
             if mem:
-                self.search.add(memory_id, mem["content"], {
-                    "type": mem.get("type", "fact"),
-                    "priority": mem.get("priority", "short_term"),
-                    "importance": mem.get("importance_score", 0.5),
-                    "tags": mem.get("tags", []),
-                })
+                self.search.add(
+                    memory_id,
+                    mem["content"],
+                    {
+                        "type": mem.get("type", "fact"),
+                        "priority": mem.get("priority", "short_term"),
+                        "importance": mem.get("importance_score", 0.5),
+                        "tags": mem.get("tags", []),
+                    },
+                )
         return ok
 
     def delete_semantic(self, memory_id: str) -> bool:
@@ -101,19 +113,25 @@ class UnifiedStore:
             return
         now = datetime.now().isoformat()
         for mid in memory_ids:
-            self.db.update_memory(mid, {
-                "access_count": (self.db.get_memory(mid) or {}).get("access_count", 0) + 1,
-                "last_accessed_at": now,
-            })
+            self.db.update_memory(
+                mid,
+                {
+                    "access_count": (self.db.get_memory(mid) or {}).get("access_count", 0) + 1,
+                    "last_accessed_at": now,
+                },
+            )
 
     def get_semantic(self, memory_id: str) -> SemanticMemory | None:
         d = self.db.get_memory(memory_id)
         if d is None:
             return None
-        self.db.update_memory(memory_id, {
-            "access_count": d.get("access_count", 0) + 1,
-            "last_accessed_at": datetime.now().isoformat(),
-        })
+        self.db.update_memory(
+            memory_id,
+            {
+                "access_count": d.get("access_count", 0) + 1,
+                "last_accessed_at": datetime.now().isoformat(),
+            },
+        )
         return SemanticMemory.from_dict(d)
 
     def search_semantic(
@@ -276,8 +294,11 @@ class UnifiedStore:
         limit: int = 20,
     ) -> list[Attachment]:
         rows = self.db.search_attachments(
-            query=query, mime_type=mime_type,
-            direction=direction, session_id=session_id, limit=limit,
+            query=query,
+            mime_type=mime_type,
+            direction=direction,
+            session_id=session_id,
+            limit=limit,
         )
         return [Attachment.from_dict(r) for r in rows]
 
@@ -292,9 +313,7 @@ class UnifiedStore:
     # Utilities
     # ======================================================================
 
-    def get_stats(
-        self, scope: str = "global", scope_owner: str = ""
-    ) -> dict:
+    def get_stats(self, scope: str = "global", scope_owner: str = "") -> dict:
         return {
             "memory_count": self.db.count(scope=scope, scope_owner=scope_owner),
             "search_backend": self.search.backend_type,

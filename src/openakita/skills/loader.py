@@ -18,6 +18,7 @@ _CURRENT_PLATFORM = sys.platform  # "win32", "darwin", "linux"
 
 logger = logging.getLogger(__name__)
 
+
 def _resolve_user_workspace_skills() -> Path:
     """动态解析当前用户工作区的技能目录。
 
@@ -26,9 +27,11 @@ def _resolve_user_workspace_skills() -> Path:
     """
     try:
         from ..config import settings
+
         return settings.skills_path
     except Exception:
         import os
+
         root = os.environ.get("OPENAKITA_ROOT", "").strip()
         if root:
             return Path(root) / "workspaces" / "default" / "skills"
@@ -68,62 +71,64 @@ SYSTEM_SKILL_DIRECTORIES = [
 
 # 打包时默认不启用的外部技能（新安装 / 无 data/skills.json 时生效）。
 # 用户通过前端面板手动勾选后会创建 skills.json，之后以用户选择为准。
-DEFAULT_DISABLED_SKILLS: frozenset[str] = frozenset({
-    "openakita/skills@algorithmic-art",
-    "openakita/skills@apify-scraper",
-    "jimliu/baoyu-skills@baoyu-article-illustrator",
-    "jimliu/baoyu-skills@baoyu-comic",
-    "jimliu/baoyu-skills@baoyu-cover-image",
-    "jimliu/baoyu-skills@baoyu-format-markdown",
-    "jimliu/baoyu-skills@baoyu-image-gen",
-    "jimliu/baoyu-skills@baoyu-infographic",
-    "jimliu/baoyu-skills@baoyu-slide-deck",
-    "jimliu/baoyu-skills@baoyu-url-to-markdown",
-    "openakita/skills@bilibili-watcher",
-    "openakita/skills@brand-guidelines",
-    "openakita/skills@changelog-generator",
-    "openakita/skills@chinese-novelist",
-    "openakita/skills@chinese-writing",
-    "openakita/skills@code-reviewer",
-    "openakita/skills@douyin-tool",
-    "openakita/skills@frontend-design",
-    "openakita/skills@github-automation",
-    "openakita/skills@gmail-automation",
-    "openakita/skills@google-calendar-automation",
-    "openakita/skills@image-understander",
-    "openakita/skills@internal-comms",
-    "openakita/skills@knowledge-capture",
-    "openakita/skills@moltbook",
-    "openakita/skills@notebooklm",
-    "openakita/skills@obsidian-skills",
-    "openakita/skills@ppt-creator",
-    "openakita/skills@pretty-mermaid",
-    "openakita/skills@slack-gif-creator",
-    "openakita/skills@summarizer",
-    "obra/superpowers@brainstorming",
-    "obra/superpowers@dispatching-parallel-agents",
-    "obra/superpowers@executing-plans",
-    "obra/superpowers@finishing-a-development-branch",
-    "obra/superpowers@receiving-code-review",
-    "obra/superpowers@requesting-code-review",
-    "obra/superpowers@subagent-driven-development",
-    "obra/superpowers@systematic-debugging",
-    "obra/superpowers@test-driven-development",
-    "obra/superpowers@using-git-worktrees",
-    "obra/superpowers@using-superpowers",
-    "obra/superpowers@verification-before-completion",
-    "obra/superpowers@writing-plans",
-    "obra/superpowers@writing-skills",
-    "openakita/skills@theme-factory",
-    "openakita/skills@todoist-task",
-    "openakita/skills@translate-pdf",
-    "openakita/skills@video-downloader",
-    "openakita/skills@webapp-testing",
-    "openakita/skills@wechat-article",
-    "openakita/skills@xiaohongshu-creator",
-    "openakita/skills@youtube-summarizer",
-    "openakita/skills@yuque-skills",
-})
+DEFAULT_DISABLED_SKILLS: frozenset[str] = frozenset(
+    {
+        "openakita/skills@algorithmic-art",
+        "openakita/skills@apify-scraper",
+        "jimliu/baoyu-skills@baoyu-article-illustrator",
+        "jimliu/baoyu-skills@baoyu-comic",
+        "jimliu/baoyu-skills@baoyu-cover-image",
+        "jimliu/baoyu-skills@baoyu-format-markdown",
+        "jimliu/baoyu-skills@baoyu-image-gen",
+        "jimliu/baoyu-skills@baoyu-infographic",
+        "jimliu/baoyu-skills@baoyu-slide-deck",
+        "jimliu/baoyu-skills@baoyu-url-to-markdown",
+        "openakita/skills@bilibili-watcher",
+        "openakita/skills@brand-guidelines",
+        "openakita/skills@changelog-generator",
+        "openakita/skills@chinese-novelist",
+        "openakita/skills@chinese-writing",
+        "openakita/skills@code-reviewer",
+        "openakita/skills@douyin-tool",
+        "openakita/skills@frontend-design",
+        "openakita/skills@github-automation",
+        "openakita/skills@gmail-automation",
+        "openakita/skills@google-calendar-automation",
+        "openakita/skills@image-understander",
+        "openakita/skills@internal-comms",
+        "openakita/skills@knowledge-capture",
+        "openakita/skills@moltbook",
+        "openakita/skills@notebooklm",
+        "openakita/skills@obsidian-skills",
+        "openakita/skills@ppt-creator",
+        "openakita/skills@pretty-mermaid",
+        "openakita/skills@slack-gif-creator",
+        "openakita/skills@summarizer",
+        "obra/superpowers@brainstorming",
+        "obra/superpowers@dispatching-parallel-agents",
+        "obra/superpowers@executing-plans",
+        "obra/superpowers@finishing-a-development-branch",
+        "obra/superpowers@receiving-code-review",
+        "obra/superpowers@requesting-code-review",
+        "obra/superpowers@subagent-driven-development",
+        "obra/superpowers@systematic-debugging",
+        "obra/superpowers@test-driven-development",
+        "obra/superpowers@using-git-worktrees",
+        "obra/superpowers@using-superpowers",
+        "obra/superpowers@verification-before-completion",
+        "obra/superpowers@writing-plans",
+        "obra/superpowers@writing-skills",
+        "openakita/skills@theme-factory",
+        "openakita/skills@todoist-task",
+        "openakita/skills@translate-pdf",
+        "openakita/skills@video-downloader",
+        "openakita/skills@webapp-testing",
+        "openakita/skills@wechat-article",
+        "openakita/skills@xiaohongshu-creator",
+        "openakita/skills@youtube-summarizer",
+        "openakita/skills@yuque-skills",
+    }
+)
 
 
 class SkillLoader:
@@ -135,16 +140,132 @@ class SkillLoader:
     - 解析 SKILL.md 文件
     - 加载技能脚本
     - 渐进式披露
+    - 懒加载（启动时仅扫描元数据，按需加载代码）
     """
+
+    # 核心技能白名单（启动时预加载）
+    CORE_SKILLS: frozenset[str] = frozenset(
+        {
+            "run-shell",
+            "read-file",
+            "write-file",
+            "edit-file",
+            "list-directory",
+            "delete-file",
+            "glob",
+            "grep",
+            "web-search",
+            "get-tool-info",
+            "delegate",
+        }
+    )
 
     def __init__(
         self,
         registry: SkillRegistry | None = None,
         parser: SkillParser | None = None,
+        lazy_load: bool = True,  # 默认启用懒加载
+        max_loaded: int = 50,  # 最多同时加载 50 个技能
     ):
         self.registry = registry if registry is not None else SkillRegistry()
         self.parser = parser or SkillParser()
         self._loaded_skills: dict[str, ParsedSkill] = {}
+        self._skill_metadata: dict[str, dict] = {}  # 技能元数据缓存
+        self._lazy_load = lazy_load
+        self._max_loaded = max_loaded
+        self._skill_dirs: dict[str, Path] = {}  # 技能目录映射
+
+    def _is_core_skill(self, skill_name: str) -> bool:
+        """判断是否是核心技能（需要预加载）"""
+        return skill_name.lower() in self.CORE_SKILLS
+
+    def _parse_skill_header(self, skill_path: Path) -> dict | None:
+        """仅解析 SKILL.md 头部元数据（不加载完整内容）"""
+        skill_md = skill_path / "SKILL.md"
+        if not skill_md.exists():
+            return None
+
+        try:
+            # 仅读取前 50 行（足够获取元数据）
+            lines = []
+            with open(skill_md, "r", encoding="utf-8") as f:
+                for i, line in enumerate(f):
+                    if i >= 50:
+                        break
+                    lines.append(line)
+
+            content = "".join(lines)
+
+            # 提取名称和描述
+            metadata = {"path": skill_path, "loaded": False}
+
+            # 从标题行提取名称
+            for line in lines:
+                if line.startswith("# "):
+                    metadata["name"] = line[2:].strip()
+                    break
+
+            # 从内容中提取简短描述
+            desc_lines = []
+            in_desc = False
+            for line in lines:
+                if line.strip().startswith("##") or line.strip().startswith("#"):
+                    if in_desc:
+                        break
+                    if "描述" in line or "Description" in line.lower() or "功能" in line:
+                        in_desc = True
+                        continue
+                elif in_desc and line.strip():
+                    desc_lines.append(line.strip())
+
+            metadata["description"] = " ".join(desc_lines[:3]) if desc_lines else ""
+
+            return metadata
+        except Exception as e:
+            logger.debug(f"[SkillLoader] 解析元数据失败 {skill_path}: {e}")
+            return None
+
+    def get_skill(self, skill_name: str) -> ParsedSkill | None:
+        """按需加载技能（懒加载）"""
+        # 已加载则直接返回
+        if skill_name in self._loaded_skills:
+            return self._loaded_skills[skill_name]
+
+        # 核心技能预加载
+        if self._lazy_load and not self._is_core_skill(skill_name):
+            # 非核心技能，尝试懒加载
+            if skill_name in self._skill_dirs:
+                return self._load_skill_if_needed(skill_name)
+
+        return None
+
+    def _load_skill_if_needed(self, skill_name: str) -> ParsedSkill | None:
+        """懒加载技能（LRU 淘汰）"""
+        if skill_name in self._loaded_skills:
+            return self._loaded_skills[skill_name]
+
+        # 超出上限则淘汰最旧技能
+        if len(self._loaded_skills) >= self._max_loaded:
+            oldest = next(iter(self._loaded_skills))
+            self._unload_skill(oldest)
+
+        # 加载技能
+        skill_dir = self._skill_dirs.get(skill_name)
+        if skill_dir:
+            skill = self.load_skill(skill_dir)
+            if skill:
+                self._loaded_skills[skill_name] = skill
+                logger.info(f"[SkillLoader] 懒加载技能：{skill_name}")
+                return skill
+
+        return None
+
+    def _unload_skill(self, skill_name: str) -> None:
+        """卸载技能（释放内存）"""
+        if skill_name in self._loaded_skills:
+            del self._loaded_skills[skill_name]
+            if skill_name in self._skill_metadata:
+                self._skill_metadata[skill_name]["loaded"] = False
 
     def discover_skill_directories(self, base_path: Path | None = None) -> list[Path]:
         """
@@ -384,9 +505,7 @@ class SkillLoader:
             return skill.body
         return None
 
-    def compute_effective_allowlist(
-        self, external_allowlist: set[str] | None
-    ) -> set[str] | None:
+    def compute_effective_allowlist(self, external_allowlist: set[str] | None) -> set[str] | None:
         """根据 skills.json 的 allowlist 和默认禁用列表，计算最终的有效 allowlist。
 
         - skills.json 存在且有 external_allowlist -> 直接使用（用户显式选择）
@@ -553,7 +672,7 @@ class SkillLoader:
                 return False, (
                     f"Script not found: {script_name}\n"
                     f"Available scripts: {', '.join(available)}\n"
-                    f"Use one of the available scripts, or use get_skill_info(\"{name}\") "
+                    f'Use one of the available scripts, or use get_skill_info("{name}") '
                     f"to check usage instructions."
                 )
             else:
@@ -561,7 +680,7 @@ class SkillLoader:
                     f"Script not found: {script_name}\n"
                     f"This skill has NO executable scripts — it is an instruction-only skill.\n"
                     f"DO NOT retry run_skill_script for this skill.\n"
-                    f"Instead: use get_skill_info(\"{name}\") to read the skill instructions, "
+                    f'Instead: use get_skill_info("{name}") to read the skill instructions, '
                     f"then write Python code and execute it via run_shell."
                 )
 
@@ -571,6 +690,7 @@ class SkillLoader:
         if script_path.suffix == ".py":
             # PyInstaller 兼容: 使用 runtime_env 获取正确的 Python 解释器
             from openakita.runtime_env import get_python_executable
+
             py = get_python_executable()
             if not py:
                 return False, "Python 解释器不可用，无法执行脚本"
@@ -581,6 +701,7 @@ class SkillLoader:
                 # Windows 上尝试 Git Bash 的常见路径
                 if sys.platform == "win32":
                     import os as _os
+
                     _sd = _os.environ.get("SYSTEMDRIVE", "C:")
                     for candidate in [
                         rf"{_sd}\Program Files\Git\bin\bash.exe",
