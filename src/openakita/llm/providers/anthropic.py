@@ -57,9 +57,15 @@ class AnthropicProvider(LLMProvider):
     def _is_local_endpoint(self) -> bool:
         """检查是否为本地端点"""
         url = self.base_url.lower()
-        return any(host in url for host in (
-            "localhost", "127.0.0.1", "0.0.0.0", "[::1]",
-        ))
+        return any(
+            host in url
+            for host in (
+                "localhost",
+                "127.0.0.1",
+                "0.0.0.0",
+                "[::1]",
+            )
+        )
 
     def _get_validated_api_key(self) -> str:
         """获取并验证 API Key，空 key 时提前抛出有意义的错误而非让 API 返回模糊 401。"""
@@ -131,6 +137,7 @@ class AnthropicProvider(LLMProvider):
                 "follow_redirects": True,
                 "trust_env": False,
                 "event_hooks": {"request": [_ensure_auth_on_redirect]},
+                "limits": httpx.Limits(max_connections=10, max_keepalive_connections=5),
             }
 
             if proxy and not is_local:
@@ -203,16 +210,10 @@ class AnthropicProvider(LLMProvider):
                     error_body = await response.aread()
                     body = error_body.decode(errors="replace")[:500]
                     if response.status_code == 401:
-                        raise AuthenticationError(
-                            f"Authentication failed: {body}"
-                        )
+                        raise AuthenticationError(f"Authentication failed: {body}")
                     if response.status_code == 429:
-                        raise RateLimitError(
-                            f"Rate limit exceeded: {body}"
-                        )
-                    raise LLMError(
-                        f"API error ({response.status_code}): {body}"
-                    )
+                        raise RateLimitError(f"Rate limit exceeded: {body}")
+                    raise LLMError(f"API error ({response.status_code}): {body}")
 
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):
@@ -385,7 +386,11 @@ class AnthropicProvider(LLMProvider):
                     f"[TEXT_TOOL_PARSE] Detected tool calls embedded inside thinking block from {self.name}"
                 )
 
-        if not has_tool_calls and combined_text_for_tool_check and has_text_tool_calls(combined_text_for_tool_check):
+        if (
+            not has_tool_calls
+            and combined_text_for_tool_check
+            and has_text_tool_calls(combined_text_for_tool_check)
+        ):
             logger.info(f"[TEXT_TOOL_PARSE] Detected text-based tool calls from {self.name}")
             clean_text, text_tool_calls = parse_text_tool_calls(combined_text_for_tool_check)
 

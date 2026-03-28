@@ -266,6 +266,8 @@ PYTHONPATH=src python3 scripts/benchmark_memory.py
 | 序号 | 优化项 | 文件 | 状态 | 预期收益 |
 |------|--------|------|------|----------|
 | 1 | Embedding 内存 LRU 缓存 | `search_backends.py`, `config.py` | ✅ 已实施 | -50MB, 搜索速度 10x |
+| 2 | 消息队列 maxsize 限制 | `gateway.py`, `inbox.py` | ✅ 已实施 | 防止 OOM |
+| 3 | httpx 连接池限制 (10 连接) | `llm/providers/anthropic.py`, `openai.py` | ✅ 已实施 | -20MB |
 
 ### 技术细节
 
